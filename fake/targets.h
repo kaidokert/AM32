@@ -1,3 +1,5 @@
+#include "main.h"
+
 #ifndef RAMP_SPEED_STARTUP
 #define RAMP_SPEED_STARTUP 2 // adjusted 2.14 to match duty cycle change between mcu targets.
 #endif

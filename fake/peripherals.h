@@ -1,12 +1,14 @@
 #pragma once
 #include <stdint.h>
 
-#define INTERVAL_TIMER_COUNT ((uint32_t)0)
+#include "main.h"
+#define INTERVAL_TIMER TIM2
+#define INTERVAL_TIMER_COUNT (INTERVAL_TIMER->CNT)
 #define RELOAD_WATCHDOG_COUNTER() ((void)0)
 #define DISABLE_COM_TIMER_INT() ((void)0)
 #define ENABLE_COM_TIMER_INT() ((void)0)
 #define SET_AND_ENABLE_COM_INT(time) ((void)(time))
-#define SET_INTERVAL_TIMER_COUNT(intertime) ((void)(intertime))
+#define SET_INTERVAL_TIMER_COUNT(intertime) do { INTERVAL_TIMER->CNT = (intertime); } while(0)
 #define SET_PRESCALER_PWM(presc) ((void)(presc))
 #define SET_AUTO_RELOAD_PWM(relval) ((void)(relval))
 #define SET_DUTY_CYCLE_ALL(newdc) ((void)(newdc))

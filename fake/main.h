@@ -16,14 +16,16 @@ typedef struct {
 } ADC_TypeDef;
 
 // Stub peripheral instances
-extern TIM_TypeDef _TIM1_inst, _TIM2_inst, _TIM14_inst;
+extern TIM_TypeDef _TIM1_inst, _TIM2_inst, _TIM14_inst, _TIM17_inst;
 extern DBGMCU_TypeDef _DBGMCU_inst;
 extern ADC_TypeDef _ADC1_inst;
 
 #define TIM1   (&_TIM1_inst)
 #define TIM2   (&_TIM2_inst)
 #define TIM14  (&_TIM14_inst)
+#define TIM17  (&_TIM17_inst)
 #define COM_TIMER TIM14
+#define UTILITY_TIMER TIM17
 #define DBGMCU (&_DBGMCU_inst)
 #define ADC1   (&_ADC1_inst)
 

@@ -342,7 +342,11 @@ uint16_t low_cell_volt_cutoff = 330; // 3.3volts per cell
 
 //=========================== END EEPROM Defaults ===========================
 
+#ifdef __MACH__
+const char filename[30] = FILE_NAME;
+#else
 const char filename[30] __attribute__((section(".file_name"))) = FILE_NAME;
+#endif
 _Static_assert(sizeof(FIRMWARE_NAME) <=13,"Firmware name too long");   // max 12 character firmware name plus NULL 
 
 // move these to targets folder or peripherals for each mcu
@@ -1702,11 +1706,17 @@ static void checkDeviceInfo(void)
 
 }
 
+#ifdef FAKE_FIRMWARE
+int init(void)
+#else
 int main(void)
+#endif
 {
 
     initAfterJump();
+#ifndef __MACH__
     checkDeviceInfo();
+#endif
     initCorePeripherals();
     enableCorePeripherals();
     loadEEpromSettings();
@@ -1840,7 +1850,13 @@ int main(void)
   startup_max_duty_cycle = startup_max_duty_cycle + 400;
 #endif
 
-    while (1) {
+#ifdef FAKE_FIRMWARE
+}
+
+void main_loop(void) {
+#else
+while (1) {
+#endif
 e_com_time = ((commutation_intervals[0] + commutation_intervals[1] + commutation_intervals[2] + commutation_intervals[3] + commutation_intervals[4] + commutation_intervals[5]) + 4) >> 1; // COMMUTATION INTERVAL IS 0.5US INCREMENTS
 #if defined(FIXED_DUTY_MODE) || defined(FIXED_SPEED_MODE)
         setInput();
@@ -2260,7 +2276,9 @@ if(zero_crosses < 5){
 #if DRONECAN_SUPPORT
 	DroneCAN_update();
 #endif
+#ifndef FAKE_FIRMWARE
     }
+#endif
 }
 
 #ifdef USE_FULL_ASSERT
@@ -2280,3 +2298,12 @@ void assert_failed(uint8_t* file, uint32_t line)
     /* USER CODE END 6 */
 }
 #endif /* USE_FULL_ASSERT */
+
+#if defined(FAKE_FIRMWARE) && !defined(AM32_UNIT_TEST)
+int main(void) {
+    init();
+    while (1) {
+        main_loop();
+    }
+}
+#endif
