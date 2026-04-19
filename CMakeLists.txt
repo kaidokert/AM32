@@ -63,6 +63,21 @@ target_link_libraries(am32_tests
     fake
 )
 
+# --- Black-box test harness ---
+add_executable(am32_harness
+    fake/harness.c
+    fake/stubs_noop.c
+    tests/test_reset.c
+    Src/main.c
+    Src/functions.c
+    Src/kiss_telemetry.c
+    Src/signal.c
+    Src/dshot.c
+    fake/stubs.c
+)
+target_include_directories(am32_harness PRIVATE fake tests)
+target_compile_definitions(am32_harness PRIVATE AM32_UNIT_TEST)
+
 if(COVERAGE)
     add_custom_target(coverage
         COMMAND ${CMAKE_COMMAND} -E env LLVM_PROFILE_FILE=${CMAKE_BINARY_DIR}/am32.profraw

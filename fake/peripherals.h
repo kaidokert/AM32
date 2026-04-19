@@ -9,9 +9,15 @@
 #define ENABLE_COM_TIMER_INT() ((void)0)
 #define SET_AND_ENABLE_COM_INT(time) ((void)(time))
 #define SET_INTERVAL_TIMER_COUNT(intertime) do { INTERVAL_TIMER->CNT = (intertime); } while(0)
-#define SET_PRESCALER_PWM(presc) ((void)(presc))
-#define SET_AUTO_RELOAD_PWM(relval) ((void)(relval))
-#define SET_DUTY_CYCLE_ALL(newdc) ((void)(newdc))
+// Observable PWM output captures
+extern uint16_t fake_pwm_duty;       // last value written by SET_DUTY_CYCLE_ALL
+extern uint16_t fake_pwm_arr;        // last value written by SET_AUTO_RELOAD_PWM
+extern uint16_t fake_pwm_prescaler;  // last value written by SET_PRESCALER_PWM
+extern uint32_t fake_pwm_duty_count; // number of SET_DUTY_CYCLE_ALL calls
+
+#define SET_PRESCALER_PWM(presc) do { fake_pwm_prescaler = (presc); } while(0)
+#define SET_AUTO_RELOAD_PWM(relval) do { fake_pwm_arr = (relval); } while(0)
+#define SET_DUTY_CYCLE_ALL(newdc) do { fake_pwm_duty = (newdc); fake_pwm_duty_count++; } while(0)
 
 void initAfterJump(void);
 void initCorePeripherals(void);

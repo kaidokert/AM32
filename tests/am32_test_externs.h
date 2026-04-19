@@ -214,3 +214,9 @@ extern TIM_TypeDef _TIM1_inst, _TIM2_inst, _TIM14_inst, _TIM17_inst;
 extern DBGMCU_TypeDef _DBGMCU_inst;
 extern ADC_TypeDef _ADC1_inst;
 extern uint32_t dma_buffer[64];
+
+// PWM output captures (from peripherals.h macros)
+extern uint16_t fake_pwm_duty;
+extern uint16_t fake_pwm_arr;
+extern uint16_t fake_pwm_prescaler;
+extern uint32_t fake_pwm_duty_count;

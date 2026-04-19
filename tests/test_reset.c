@@ -253,4 +253,10 @@ void resetFirmwareState(void)
 
     // --- shared buffers ---
     memset(dma_buffer, 0, sizeof(dma_buffer));
+
+    // --- PWM output captures ---
+    fake_pwm_duty = 0;
+    fake_pwm_arr = 0;
+    fake_pwm_prescaler = 0;
+    fake_pwm_duty_count = 0;
 }

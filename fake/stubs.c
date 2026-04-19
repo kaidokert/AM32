@@ -11,6 +11,12 @@ ADC_TypeDef _ADC1_inst;
 // Global variables
 EEprom_t eepromBuffer;
 uint32_t dma_buffer[64];
+
+// PWM output captures
+uint16_t fake_pwm_duty = 0;
+uint16_t fake_pwm_arr = 0;
+uint16_t fake_pwm_prescaler = 0;
+uint32_t fake_pwm_duty_count = 0;
 char EDT_ARM_ENABLE;
 char EDT_ARMED;
 
