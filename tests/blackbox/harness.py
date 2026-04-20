@@ -87,6 +87,12 @@ class AM32Harness:
         line = self._recv()
         assert line == "ok", f"Expected 'ok', got '{line}'"
 
+    def load_eeprom(self):
+        """Call loadEEpromSettings() to apply eeprom config."""
+        self._send("load_eeprom")
+        line = self._recv()
+        assert line == "ok", f"Expected 'ok', got '{line}'"
+
     def state(self):
         """Query current state without ticking."""
         self._send("state")
@@ -167,6 +173,20 @@ def run_test_vectors(harness, vectors_file):
     # Run sequence
     results = []
     for seq_line in sequence_lines:
+        # Inline config commands
+        if seq_line.startswith("config "):
+            kvs = seq_line[7:]
+            for token in kvs.split():
+                if "=" in token:
+                    k, v = token.split("=", 1)
+                    harness.config(**{k: v})
+            continue
+
+        # Inline commands
+        if seq_line == "load_eeprom":
+            harness.load_eeprom()
+            continue
+
         parts = [p.strip() for p in seq_line.split("|")]
         cmd_part = parts[0]
         input_part = parts[1] if len(parts) > 1 else ""

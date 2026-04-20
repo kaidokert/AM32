@@ -100,4 +100,28 @@ if(COVERAGE)
         WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
         COMMENT "Running tests and generating coverage report"
     )
+
+    add_custom_target(coverage-blackbox
+        COMMAND ${CMAKE_COMMAND} -E rm -f ${CMAKE_BINARY_DIR}/blackbox_*.profraw
+        COMMAND ${CMAKE_COMMAND} -E env LLVM_PROFILE_FILE=${CMAKE_BINARY_DIR}/blackbox_%m.profraw
+                ${CMAKE_SOURCE_DIR}/.venv/bin/python -m pytest
+                ${CMAKE_SOURCE_DIR}/tests/blackbox/test_vectors.py -v
+        COMMAND xcrun llvm-profdata merge -sparse
+                ${CMAKE_BINARY_DIR}/blackbox_*.profraw
+                -o ${CMAKE_BINARY_DIR}/blackbox.profdata
+        COMMAND xcrun llvm-cov report
+                $<TARGET_FILE:am32_harness>
+                -instr-profile=${CMAKE_BINARY_DIR}/blackbox.profdata
+                -sources ${CMAKE_SOURCE_DIR}/Src/
+        COMMAND xcrun llvm-cov show
+                $<TARGET_FILE:am32_harness>
+                -instr-profile=${CMAKE_BINARY_DIR}/blackbox.profdata
+                -sources ${CMAKE_SOURCE_DIR}/Src/
+                -format=html
+                -output-dir=${CMAKE_BINARY_DIR}/coverage-blackbox
+        COMMAND ${CMAKE_COMMAND} -E echo "HTML report: ${CMAKE_BINARY_DIR}/coverage-blackbox/index.html"
+        DEPENDS am32_harness
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        COMMENT "Running blackbox tests and generating coverage report"
+    )
 endif()

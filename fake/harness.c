@@ -43,9 +43,37 @@ void fullBrake(void) {}
 void allpwm(void) {}
 void proportionalBrake(void) {}
 
+// Build a DShot frame in dma_buffer from an 11-bit throttle value.
+// Encodes proper CRC. Uses normal (non-inverted) CRC.
+static void build_dshot_frame(uint16_t value) {
+    uint8_t bits[16] = {0};
+    for (int i = 0; i < 11; i++)
+        bits[i] = (value >> (10 - i)) & 1;
+    bits[11] = 0; // no telemetry request
+
+    uint8_t crc = ((bits[0] ^ bits[4] ^ bits[8]) << 3 |
+                   (bits[1] ^ bits[5] ^ bits[9]) << 2 |
+                   (bits[2] ^ bits[6] ^ bits[10]) << 1 |
+                   (bits[3] ^ bits[7] ^ bits[11]));
+    bits[12] = (crc >> 3) & 1;
+    bits[13] = (crc >> 2) & 1;
+    bits[14] = (crc >> 1) & 1;
+    bits[15] = crc & 1;
+
+    uint32_t base = 1000;
+    for (int i = 0; i < 16; i++) {
+        dma_buffer[i * 2] = base;
+        dma_buffer[i * 2 + 1] = base + (bits[i] ? 22 : 10);
+        base += 32;
+    }
+    dshot_frametime_high = 600;
+    dshot_frametime_low = 400;
+}
+
 static uint32_t tick_count = 0;
 static int has_throttle = 0;    // whether throttle is being driven
 static int throttle_value = 0;  // current throttle value
+static int do_transfer = 0;    // call transfercomplete() this tick
 
 static void print_state(void) {
     printf("tick=%u armed=%d running=%d step=%d forward=%d "
@@ -59,7 +87,9 @@ static void print_state(void) {
            "battery_voltage=%u actual_current=%d degrees_celsius=%d "
            "last_duty_cycle=%u prop_brake_active=%d "
            "inputSet=%d dshot=%d servoPwm=%d "
-           "pwm_duty=%u pwm_arr=%u pwm_duty_count=%u\n",
+           "pwm_duty=%u pwm_arr=%u pwm_duty_count=%u "
+           "duty_cycle_maximum=%u filter_level=%u "
+           "send_telemetry=%d send_esc_info_flag=%d\n",
            tick_count,
            (int)armed, (int)running, (int)step, (int)forward,
            (unsigned)duty_cycle, (unsigned)duty_cycle_setpoint,
@@ -73,7 +103,9 @@ static void print_state(void) {
            (unsigned)battery_voltage, (int)actual_current, (int)degrees_celsius,
            (unsigned)last_duty_cycle, (int)prop_brake_active,
            (int)inputSet, (int)dshot, (int)servoPwm,
-           (unsigned)fake_pwm_duty, (unsigned)fake_pwm_arr, (unsigned)fake_pwm_duty_count);
+           (unsigned)fake_pwm_duty, (unsigned)fake_pwm_arr, (unsigned)fake_pwm_duty_count,
+           (unsigned)duty_cycle_maximum, (unsigned)filter_level,
+           (int)send_telemetry, (int)send_esc_info_flag);
     fflush(stdout);
 }
 
@@ -87,7 +119,11 @@ static void do_tick(void) {
     // Advance interval timer
     _TIM2_inst.CNT++;
 
-    // Simulate processDshot/setInput which normally runs from ISR
+    // Simulate ISR-driven input processing
+    if (do_transfer) {
+        transfercomplete();
+        do_transfer = 0;
+    }
     setInput();
     tenKhzRoutine();
     main_loop();
@@ -104,10 +140,20 @@ static void apply_kv(const char *key, const char *val) {
         else { throttle_value = v; has_throttle = 1; EDT_ARMED = 1; }
     }
     else if (strcmp(key, "comp") == 0) { mock_comp_level = v; }
+    else if (strcmp(key, "transfer") == 0) { do_transfer = v; }
+    else if (strcmp(key, "dshot_frame") == 0) { build_dshot_frame((uint16_t)v); do_transfer = 1; }
     else if (strcmp(key, "interval_timer") == 0) { _TIM2_inst.CNT = v; }
+    else if (strncmp(key, "dma_", 4) == 0) {
+        // dma_<index>=<value> sets dma_buffer[index]
+        int idx = atoi(key + 4);
+        if (idx >= 0 && idx < 64) { dma_buffer[idx] = (uint32_t)v; }
+    }
     else if (strcmp(key, "zc") == 0 && v == 1) {
-        // Force a zero-crossing: call interruptRoutine or PeriodElapsedCallback
+        // Force a zero-crossing: interruptRoutine masks comparator and sets up
+        // commutation timer. PeriodElapsedCallback fires when timer expires
+        // and calls commutate(). We call both to simulate the full sequence.
         interruptRoutine();
+        PeriodElapsedCallback();
     }
     // Config: eeprom fields
     else if (strcmp(key, "eeprom.bi_direction") == 0) { eepromBuffer.bi_direction = v; }
@@ -126,6 +172,14 @@ static void apply_kv(const char *key, const char *val) {
     else if (strcmp(key, "eeprom.drag_brake_strength") == 0) { eepromBuffer.drag_brake_strength = v; }
     else if (strcmp(key, "eeprom.beep_volume") == 0) { eepromBuffer.beep_volume = v; }
     else if (strcmp(key, "eeprom.low_voltage_cut_off") == 0) { eepromBuffer.low_voltage_cut_off = v; }
+    else if (strcmp(key, "eeprom.current_P") == 0) { eepromBuffer.current_P = v; }
+    else if (strcmp(key, "eeprom.current_I") == 0) { eepromBuffer.current_I = v; }
+    else if (strcmp(key, "eeprom.current_D") == 0) { eepromBuffer.current_D = v; }
+    else if (strcmp(key, "eeprom.eeprom_version") == 0) { eepromBuffer.eeprom_version = v; }
+    else if (strcmp(key, "eeprom.motor_kv") == 0) { eepromBuffer.motor_kv = v; }
+    else if (strcmp(key, "eeprom.motor_poles") == 0) { eepromBuffer.motor_poles = v; }
+    else if (strcmp(key, "eeprom.advance_level") == 0) { eepromBuffer.advance_level = v; }
+    else if (strcmp(key, "eeprom.max_ramp") == 0) { eepromBuffer.max_ramp = v; }
     // Direct state overrides
     else if (strcmp(key, "armed") == 0) { armed = v; }
     else if (strcmp(key, "running") == 0) { running = v; }
@@ -138,6 +192,39 @@ static void apply_kv(const char *key, const char *val) {
     else if (strcmp(key, "zero_crosses") == 0) { zero_crosses = v; }
     else if (strcmp(key, "commutation_interval") == 0) { commutation_interval = v; }
     else if (strcmp(key, "zero_input_count") == 0) { zero_input_count = v; }
+    else if (strcmp(key, "EDT_ARMED") == 0) { EDT_ARMED = v; }
+    else if (strcmp(key, "EDT_ARM_ENABLE") == 0) { EDT_ARM_ENABLE = v; }
+    else if (strcmp(key, "dshot_telemetry") == 0) { dshot_telemetry = v; }
+    else if (strcmp(key, "signaltimeout") == 0) { signaltimeout = v; }
+    else if (strcmp(key, "cell_count") == 0) { cell_count = v; }
+    else if (strcmp(key, "battery_voltage") == 0) { battery_voltage = v; }
+    else if (strcmp(key, "process_adc") == 0) { PROCESS_ADC_FLAG = v; }
+    else if (strcmp(key, "degrees_celsius") == 0) { degrees_celsius = v; }
+    else if (strcmp(key, "actual_current") == 0) { actual_current = v; }
+    else if (strcmp(key, "bemf_timeout_happened") == 0) { bemf_timeout_happened = v; }
+    else if (strcmp(key, "bemf_timeout") == 0) { bemf_timeout = v; }
+    else if (strcmp(key, "eeprom.limits.temperature") == 0) { eepromBuffer.limits.temperature = v; }
+    else if (strcmp(key, "eeprom.limits.current") == 0) { eepromBuffer.limits.current = v; }
+    else if (strcmp(key, "prop_brake_active") == 0) { prop_brake_active = v; }
+    else if (strcmp(key, "duty_cycle") == 0) { duty_cycle = v; }
+    else if (strcmp(key, "last_duty_cycle") == 0) { last_duty_cycle = v; }
+    else if (strcmp(key, "low_voltage_count") == 0) { low_voltage_count = v; }
+    else if (strcmp(key, "stepper_sine") == 0) { stepper_sine = v; }
+    else if (strcmp(key, "send_esc_info_flag") == 0) { send_esc_info_flag = v; }
+    else if (strcmp(key, "send_telemetry") == 0) { send_telemetry = v; }
+    else if (strcmp(key, "out_put") == 0) { out_put = v; }
+    else if (strcmp(key, "calibration_required") == 0) { calibration_required = v; }
+    else if (strcmp(key, "high_calibration_set") == 0) { high_calibration_set = v; }
+    else if (strcmp(key, "high_calibration_counts") == 0) { high_calibration_counts = v; }
+    else if (strcmp(key, "low_calibration_counts") == 0) { low_calibration_counts = v; }
+    else if (strcmp(key, "servo_high_threshold") == 0) { servo_high_threshold = v; }
+    else if (strcmp(key, "servo_low_threshold") == 0) { servo_low_threshold = v; }
+    else if (strcmp(key, "enter_calibration_count") == 0) { enter_calibration_count = v; }
+    else if (strcmp(key, "last_input") == 0) { last_input = v; }
+    else if (strcmp(key, "adjusted_input") == 0) { adjusted_input = v; }
+    else if (strcmp(key, "eeprom.telemetry_on_interval") == 0) { eepromBuffer.telemetry_on_interval = v; }
+    else if (strcmp(key, "use_current_limit") == 0) { use_current_limit = v; }
+    else if (strcmp(key, "use_speed_control_loop") == 0) { use_speed_control_loop = v; }
     else {
         fprintf(stderr, "harness: unknown key '%s'\n", key);
     }
@@ -180,6 +267,11 @@ int main(void) {
         }
         else if (strncmp(line, "state", 5) == 0) {
             print_state();
+        }
+        else if (strncmp(line, "load_eeprom", 11) == 0) {
+            loadEEpromSettings();
+            printf("ok\n");
+            fflush(stdout);
         }
         else if (strncmp(line, "config ", 7) == 0) {
             parse_kvs(line + 7);

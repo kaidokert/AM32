@@ -180,6 +180,8 @@ extern uint8_t calibration_required;
 extern uint8_t high_calibration_counts;
 extern uint8_t high_calibration_set;
 extern uint16_t last_input;
+extern uint16_t last_high_threshold;
+extern uint8_t low_calibration_counts;
 extern uint8_t buffersize;
 extern uint32_t average_signal_pulse;
 extern uint8_t average_count;
