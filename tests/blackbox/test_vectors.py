@@ -18,7 +18,9 @@ VECTORS_DIR = Path(__file__).parent / "vectors"
 
 @pytest.fixture
 def harness():
-    with AM32Harness() as h:
+    import os
+    exe = os.environ.get("AM32_HARNESS", None)
+    with AM32Harness(exe_path=exe) as h:
         yield h
 
 

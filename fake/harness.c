@@ -225,6 +225,9 @@ static void apply_kv(const char *key, const char *val) {
     else if (strcmp(key, "eeprom.telemetry_on_interval") == 0) { eepromBuffer.telemetry_on_interval = v; }
     else if (strcmp(key, "use_current_limit") == 0) { use_current_limit = v; }
     else if (strcmp(key, "use_speed_control_loop") == 0) { use_speed_control_loop = v; }
+    else if (strcmp(key, "desync_check") == 0) { desync_check = v; }
+    else if (strcmp(key, "average_interval") == 0) { average_interval = v; }
+    else if (strcmp(key, "last_average_interval") == 0) { last_average_interval = v; }
     else {
         fprintf(stderr, "harness: unknown key '%s'\n", key);
     }
