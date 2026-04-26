@@ -17,3 +17,6 @@ Keil_Projects/Listings
 *.o
 .DS_Store
 .vscode/settings.json
+build/
+.cache/
+tests/blackbox/__pycache__/
