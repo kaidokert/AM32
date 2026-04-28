@@ -301,6 +301,33 @@ int main(void) {
             do_tick();
             print_state();
         }
+        else if (strncmp(line, "gcr_encode ", 11) == 0) {
+            // gcr_encode <com_time> [padding=<N>]
+            // Calls make_dshot_package(com_time) and prints the gcr[37] buffer.
+            // Optional padding= overrides buffer_padding (default 7).
+            // EDT_ARMED must be 0 to get eRPM encoding (not EDT extended frames).
+            extern int shift_amount;
+            extern int dshot_full_number;
+            char *rest = line + 11;
+            uint16_t com_time = (uint16_t)atoi(rest);
+            char *pad_arg = strstr(rest, "padding=");
+            if (pad_arg) {
+                buffer_padding = (uint8_t)atoi(pad_arg + 8);
+            } else {
+                buffer_padding = 7;  // default: non-F051
+            }
+            EDT_ARMED = 0;  // ensure eRPM path, not EDT
+            make_dshot_package(com_time);
+            // Print: gcr=<v0>,<v1>,...,<v36> shift=<N> dshot_full=<N>
+            printf("gcr=");
+            for (int i = 0; i < 37; i++) {
+                if (i > 0) printf(",");
+                printf("%u", gcr[i]);
+            }
+            printf(" shift=%d dshot_full=%d padding=%d\n",
+                   shift_amount, dshot_full_number, buffer_padding);
+            fflush(stdout);
+        }
         else {
             fprintf(stderr, "harness: unknown command '%s'\n", line);
         }

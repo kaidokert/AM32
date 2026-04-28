@@ -114,6 +114,15 @@ class AM32Harness:
             self._send(f"ticks {n}")
         return self._parse_state(self._recv())
 
+    def gcr_encode(self, com_time, **kwargs):
+        """Encode com_time via make_dshot_package and return gcr buffer + metadata.
+        Returns dict with 'gcr' (comma-separated), 'shift', 'dshot_full', 'padding'."""
+        args = f"{com_time}"
+        for k, v in kwargs.items():
+            args += f" {k}={v}"
+        self._send(f"gcr_encode {args}")
+        return self._parse_state(self._recv())
+
     def arm(self, input_type="dshot"):
         """Convenience: run the arming sequence.
         Sets inputSet=1, zero throttle, waits for armed=1."""
@@ -207,6 +216,9 @@ def run_test_vectors(harness, vectors_file):
         elif cmd == "ticks":
             n = int(tokens[1])
             state = harness.ticks(n, **inputs)
+        elif cmd == "gcr_encode":
+            com_time = int(tokens[1])
+            state = harness.gcr_encode(com_time, **inputs)
         else:
             raise ValueError(f"Unknown command: {cmd}")
 
@@ -214,13 +226,19 @@ def run_test_vectors(harness, vectors_file):
         if assert_part:
             for assertion in assert_part.split():
                 # Support: key=value, key>value, key<value, key>=value, key<=value
-                m = re.match(r"(\w+)(>=|<=|>|<|=)(\d+)", assertion)
+                # Value can be numeric or string (for gcr= comma-separated buffers)
+                m = re.match(r"(\w+)(>=|<=|>|<|=)([\w,.-]+)", assertion)
                 if not m:
                     raise ValueError(f"Bad assertion: {assertion}")
-                key, op, expected = m.group(1), m.group(2), int(m.group(3))
+                key, op, expected_str = m.group(1), m.group(2), m.group(3)
                 actual = state.get(key)
                 if actual is None:
                     raise KeyError(f"Key '{key}' not in state")
+                # Try numeric comparison; fall back to string
+                try:
+                    expected = int(expected_str)
+                except ValueError:
+                    expected = expected_str
 
                 if op == "=" and not (actual == expected):
                     raise AssertionError(
