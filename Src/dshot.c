@@ -69,7 +69,7 @@ uint8_t programming_mode;
 uint16_t position;
 uint8_t  new_byte;
 
-void computeDshotDMA()
+void computeDshotDMA() /* REQTRK: REQ-SIG-DSHOT_DECODE, REQ-SIG-DSHOT_BIDIR */
 {
     dshot_frametime = dma_buffer[31] - dma_buffer[0];
     halfpulsetime = dshot_frametime >> 5;
@@ -107,7 +107,7 @@ void computeDshotDMA()
             if (dpulse[11] == 1) {
                 send_telemetry = 1;
             }
-            if(programming_mode > 0){  
+            if(programming_mode > 0){   /* REQTRK: REQ-TELEM-PROG_MODE */
                 if(programming_mode == 1){ // begin programming mode
                     position = tocheck;    // eepromBuffer position
                     programming_mode = 2;
@@ -127,7 +127,7 @@ void computeDshotDMA()
                 return; // don't process dshot signal when in programming mode
             }
             if (tocheck > 47) {
-                if (EDT_ARMED) {
+                if (EDT_ARMED) { /* REQTRK: REQ-SIG-DSHOT_INPUT_PROCESSING */
                     newinput = tocheck;
                     dshotcommand = 0;
                     command_count = 0;
@@ -154,7 +154,7 @@ void computeDshotDMA()
                 command_count = 0;
             }
 
-            if ((dshotcommand > 0) && (running == 0) && armed) {
+            if ((dshotcommand > 0) && (running == 0) && armed) { /* REQTRK: REQ-TELEM-DSHOT_CMD */
                 if (dshotcommand != last_command) {
                     last_command = dshotcommand;
                     command_count = 0;
@@ -239,11 +239,11 @@ void computeDshotDMA()
     }
 }
 
-void make_dshot_package(uint16_t com_time)
+void make_dshot_package(uint16_t com_time) /* REQTRK: REQ-TELEM-EDT_SCHEDULING, REQ-TEST-DSHOT_ERPM_SHIFT */
 {
     uint16_t extended_frame_to_send = 0;
 
-    if (dshot_extended_telemetry) {
+    if (dshot_extended_telemetry) { /* REQTRK: REQ-TELEM-EDT_SCHEDULING */
         // Only send extended telemetry if last frame wasn't extended. This ensures eRPM interleaving.
         if (telem_scheduler.last_sent_extended) {
             telem_scheduler.last_sent_extended = 0;
@@ -267,7 +267,7 @@ void make_dshot_package(uint16_t com_time)
             }
         }
     }
-      if(send_EDT_init){
+      if(send_EDT_init){ /* REQTRK: REQ-TELEM-EDT_STATE_MANAGEMENT */
         extended_frame_to_send = 0b111000000000;
         send_EDT_init = 0;
       }
@@ -301,7 +301,7 @@ void make_dshot_package(uint16_t com_time)
         dshot_full_number = ((shift_amount << 9) | (com_time >> shift_amount));
     }
     // calculate checksum
-    uint16_t csum = 0;
+    uint16_t csum = 0; /* REQTRK: REQ-TELEM-BIDIR_CHECKSUM */
     uint16_t csum_data = dshot_full_number;
     for (int i = 0; i < 3; i++) {
         csum ^= csum_data; // xor data by nibbles
@@ -314,7 +314,7 @@ void make_dshot_package(uint16_t com_time)
 
     // GCR RLL encode 16 to 20 bit
 
-    gcrnumber = gcr_encode_table[(dshot_full_number >> 12)]
+    gcrnumber = gcr_encode_table[(dshot_full_number >> 12)] /* REQTRK: REQ-TELEM-GCR_ENCODING */
             << 15 // first set of four digits
         | gcr_encode_table[(((1 << 4) - 1) & (dshot_full_number >> 8))]
             << 10 // 2nd set of 4 digits
@@ -323,7 +323,7 @@ void make_dshot_package(uint16_t com_time)
         | gcr_encode_table[(((1 << 4) - 1) & (dshot_full_number >> 0))]; // last four digits
 // GCR RLL encode 20 to 21bit output
 #if defined(MCU_F051) || defined(MCU_F031) || defined(MCU_CH32V203)
-    gcr[1 + buffer_padding] = 64;
+    gcr[1 + buffer_padding] = 64; /* REQTRK: REQ-TELEM-NRZI_ENCODING */
     for (int i = 19; i >= 0; i--) { // each digit in gcrnumber
         gcr[buffer_padding + 20 - i + 1] = ((((gcrnumber & 1 << i)) >> i) ^ (gcr[buffer_padding + 20 - i] >> 6))
             << 6; // exclusive ored with number before it multiplied by 64 to match
@@ -331,7 +331,7 @@ void make_dshot_package(uint16_t com_time)
     }
     gcr[buffer_padding] = 0;
 #else
-    gcr[1 + buffer_padding] = 128;
+    gcr[1 + buffer_padding] = 128; /* REQTRK: REQ-TELEM-NRZI_ENCODING */
     for (int i = 19; i >= 0; i--) { // each digit in gcrnumber
         gcr[buffer_padding + 20 - i + 1] = ((((gcrnumber & 1 << i)) >> i) ^ (gcr[buffer_padding + 20 - i] >> 7))
             << 7; // exclusive ored with number before it multiplied by 64 to match

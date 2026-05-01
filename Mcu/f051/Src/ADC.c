@@ -18,7 +18,7 @@ extern uint16_t ADC_raw_current;
 extern uint16_t ADC_raw_input;
 
 void ADC_DMA_Callback()
-{ // read dma buffer and set extern variables
+{ /* REQTRK: REQ-HW-ADC-DATA_MAPPING */ // read dma buffer and set extern variables
 
 #ifdef USE_ADC_INPUT
     ADC_raw_temp = ADCDataDMA[3];
@@ -39,7 +39,7 @@ void ADC_DMA_Callback()
 }
 
 void enableADC_DMA()
-{ // enables channel
+{ /* REQTRK: REQ-HW-ADC-DMA_CIRC */ // enables channel
 
     //	NVIC_SetPriority(DMA1_Channel1_IRQn, 3);
     //	NVIC_EnableIRQ(DMA1_Channel1_IRQn);
@@ -67,7 +67,7 @@ void enableADC_DMA()
 }
 
 void activateADC()
-{ // called right after enable regular conversions are
+{ /* REQTRK: REQ-HW-ADC-CALIBRATION */ // called right after enable regular conversions are
     // started by software and DMA interrupt happens at end of
     // transfer
 

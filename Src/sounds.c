@@ -21,7 +21,7 @@ uint8_t beep_volume;
 
 
 void pause(uint16_t ms)
-{
+{ /* REQTRK: REQ-UI-AUDIO_CFG */
     SET_DUTY_CYCLE_ALL(0);
     delayMillis(ms);
     SET_DUTY_CYCLE_ALL(beep_volume); // volume of the beep, (duty cycle) don't go
@@ -42,7 +42,7 @@ void setCaptureCompare()
 }
 
 void playBJNote(uint16_t freq, uint16_t bduration)
-{
+{ /* REQTRK: REQ-UI-BLUEJAY_UTIL */
     uint16_t timerOne_reload;
     SET_PRESCALER_PWM(9);
     timerOne_reload = (uint16_t)(CPU_FREQUENCY_MHZ * 100000 / freq);
@@ -56,7 +56,7 @@ uint16_t getBlueJayNoteFrequency(uint8_t bjarrayfreq)
     return (uint16_t)(10000000 / ((uint32_t)bjarrayfreq * 247 + 4000));
 }
 
-void playBlueJayTune(void)
+void playBlueJayTune(void) /* REQTRK: REQ-UI-BLUEJAY_TUNE */
 {
     uint8_t  full_time_count = 0;
     uint32_t duration;          
@@ -105,7 +105,7 @@ void playBlueJayTune(void)
 }
 
 
-void playStartupTune()
+void playStartupTune() /* REQTRK: REQ-UI-STARTUP_TUNE */
 {
     __disable_irq();
 comStep(3);
@@ -136,7 +136,7 @@ comStep(3);
 }
 
 void playBrushedStartupTune()
-{
+{ /* REQTRK: REQ-UI-BRUSHED_STARTUP */
     __disable_irq();
     SET_AUTO_RELOAD_PWM(TIM1_AUTORELOAD);
     setCaptureCompare();
@@ -160,7 +160,7 @@ void playBrushedStartupTune()
 }
 
 void playDuskingTune()
-{
+{ /* REQTRK: REQ-UI-DUSKING_TUNE */
     setCaptureCompare();
     SET_AUTO_RELOAD_PWM(TIM1_AUTORELOAD);
     comStep(2); // activate a pwm channel
@@ -186,7 +186,7 @@ void playDuskingTune()
 }
 
 void playInputTune2()
-{
+{ /* REQTRK: REQ-UI-INPUT_FEEDBACK */
     SET_AUTO_RELOAD_PWM(TIM1_AUTORELOAD);
     __disable_irq();
     RELOAD_WATCHDOG_COUNTER();
@@ -206,7 +206,7 @@ void playInputTune2()
     __enable_irq();
 }
 
-void playInputTune()
+void playInputTune() /* REQTRK: REQ-UI-CELL_COUNT_BEEPS */
 {
     __disable_irq();
     SET_AUTO_RELOAD_PWM(TIM1_AUTORELOAD);
@@ -227,7 +227,7 @@ void playInputTune()
 }
 
 void playDefaultTone()
-{
+{ /* REQTRK: REQ-UI-CONFIG_FEEDBACK */
     SET_AUTO_RELOAD_PWM(TIM1_AUTORELOAD);
     SET_PRESCALER_PWM(50);
     setCaptureCompare();
@@ -243,7 +243,7 @@ void playDefaultTone()
 }
 
 void playChangedTone()
-{
+{ /* REQTRK: REQ-UI-CONFIG_FEEDBACK */
     SET_AUTO_RELOAD_PWM(TIM1_AUTORELOAD);
     SET_PRESCALER_PWM(40);
     setCaptureCompare();
@@ -258,7 +258,7 @@ void playChangedTone()
     SET_AUTO_RELOAD_PWM(TIMER1_MAX_ARR);
 }
 
-void playBeaconTune3()
+void playBeaconTune3() /* REQTRK: REQ-UI-BEACON_ERROR_TONES */
 {
     SET_AUTO_RELOAD_PWM(TIM1_AUTORELOAD);
     __disable_irq();

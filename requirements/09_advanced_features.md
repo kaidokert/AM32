@@ -1,49 +1,33 @@
 # 09 Advanced Features & Hardware Variations
 
-This document details nuanced features, custom timing logic, and hardware-specific variations.
+This document details nuanced features, custom timing, and hardware variations.
 
-## 9.1 Timing & Ramp Customizations
+## Timing & Ramp Customizations
 
-- **Requirement 9.1.1: Custom Acceleration Ramps**
-  - The firmware MUST support customizable acceleration and deceleration ramps to suit different motor and load characteristics.
-  - **C Reference:** `Src/main.c:1381` (`#ifndef CUSTOM_RAMP`), `Src/main.c:1439` (Ramp logic).
-  - **Rust Reference:** `downloads/rm32/src/control/isr_logic.rs:173-190` (`ramp_limit` logic).
+- **REQ-MOTOR-RAMP_CUSTOM:** Support for customizable acceleration/deceleration ramps.
+  - **C Reference:** `Src/main.c:1381`, `Src/main.c:1439`
+  - **Rust Reference:** `downloads/rm32/src/control/isr_logic.rs:173-190`
 
-- **Requirement 9.1.2: Voltage-Based Ramp Scaling**
-  - The firmware MUST support scaling the acceleration ramp based on the current battery voltage.
-  - **C Reference:** `Src/main.c:452` (`#ifdef VOLTAGE_BASED_RAMP`).
-  - **Rust Reference:** Not explicitly implemented as a distinct mode, but ramp logic exists.
+- **REQ-MOTOR-VOLTAGE_RAMP:** Scaling acceleration ramp based on current battery voltage.
+  - **C Reference:** `Src/main.c:452` (`#ifdef VOLTAGE_BASED_RAMP`)
+  - **Rust Reference:** `downloads/rm32/src/control/isr_logic.rs:173-190` (logic), `downloads/rm32_stm32/src/isr_handlers.rs:48` (wiring)
 
-- **Requirement 9.1.3: Startup Boost**
-  - An optional startup boost feature MUST be available to provide extra torque during the initial motor synchronization.
-  - **C Reference:** `Src/main.c:1847` (`#ifdef USE_STARTUP_BOOST`).
-  - **Rust Reference:** Not explicitly implemented.
+- **REQ-MOTOR-STARTUP_BOOST:** Optional torque boost during initial motor synchronization.
+  - **C Reference:** `Src/main.c:1847` (`#ifdef USE_STARTUP_BOOST`)
+  - **Rust Reference:** `downloads/rm32_stm32/src/bin/main.rs:201` (logic gated by `BOARD.startup_boost`)
 
-## 9.2 Hardware Sensor & Driver Support
+## Hardware Support Variations
 
-- **Requirement 9.2.1: Hall Sensor Support**
-  - The firmware MUST support sensored BLDC operation using internal or external Hall sensors for precise low-speed control.
-  - **C Reference:** `Src/main.c:678` (`#ifndef HAS_HALL_SENSORS`).
-  - **Rust Reference:** `downloads/rm32/src/config.rs:57` (`use_hall_sensors` field).
+- **REQ-HW-PWM_ENABLE_BRIDGE:** Support for drivers using an "Enable" pin alongside PWM.
+  - **C Reference:** `Src/main.c:124` (`#ifndef PWM_ENABLE_BRIDGE`)
+  - **Rust Reference:** `downloads/rm32_stm32/src/phase.rs:40` (`PhaseDriver::new_bridge`), `board.rs` (`bridge_enable` flag)
 
-- **Requirement 9.2.2: PWM Enable Style Bridges**
-  - Support MUST be provided for motor drivers that use an "Enable" pin alongside standard PWM signals.
-  - **C Reference:** `Src/main.c:124` (`#ifndef PWM_ENABLE_BRIDGE`).
-  - **Rust Reference:** Not explicitly implemented.
+## Protocol & Telemetry Variations
 
-- **Requirement 9.2.3: Pulse Output**
-  - The firmware MUST support an optional pulse output signal (typically for debugging or external sensor feedback).
-  - **C Reference:** `Src/main.c:456` (`#ifdef USE_PULSE_OUT`).
-  - **Rust Reference:** Not explicitly implemented.
+- **REQ-SIG-CRSF_INPUT:** Support for CRSF (Crossfire) serial protocol input.
+  - **C Reference:** `Src/main.c:1828` (`#ifdef USE_CRSF_INPUT`)
+  - **Rust Reference:** `downloads/rm32/src/crsf.rs`
 
-## 9.3 Signal Variations
-
-- **Requirement 9.3.1: CRSF Input Support**
-  - The firmware MUST support the CRSF (Crossfire) serial protocol as an alternative input source.
-  - **C Reference:** `Src/main.c:1828` (`#ifdef USE_CRSF_INPUT`).
-  - **Rust Reference:** `downloads/rm32/src/crsf.rs` (Complete `CrsfParser` implementation).
-
-- **Requirement 9.3.2: Serial Telemetry**
-  - Support MUST be provided for standard serial telemetry output (e.g., KISS telemetry) over a dedicated UART pin.
-  - **C Reference:** `Src/main.c:449` (`#ifdef USE_SERIAL_TELEMETRY`).
-  - **Rust Reference:** `downloads/rm32/src/telemetry.rs`, `downloads/rm32_stm32/src/telemetry_uart.rs`.
+- **REQ-TELEM-SERIAL_UART:** Standard serial telemetry output (e.g., KISS) over UART.
+  - **C Reference:** `Src/main.c:449` (`#ifdef USE_SERIAL_TELEMETRY`)
+  - **Rust Reference:** `downloads/rm32/src/telemetry.rs`, `downloads/rm32_stm32/src/telemetry_uart.rs`

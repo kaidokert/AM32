@@ -1,34 +1,35 @@
 # 08 Specialized Motor Modes
 
-This document covers alternative motor control modes that deviate from the standard brushless operation.
+This document covers alternative motor control modes.
 
-## 8.1 Brushed Motor Mode
+## Brushed Motor Mode
 
-- **Requirement 8.1.1: Brushed Motor Support**
-  - The firmware MUST support driving brushed DC motors by overriding standard brushless commutation and using two-channel PWM control.
-  - **C Reference:** `Src/main.c:1615-1645` (`runBrushedLoop`).
-  - **Rust Reference:** `downloads/rm32/src/brushed.rs` (`brushed_tick` logic).
+- **REQ-FEAT-BRUSHED_MODE:** Support for driving brushed DC motors via two-channel PWM.
+  - **C Reference:** `Src/main.c:1615-1645` (`runBrushedLoop`)
+  - **Rust Reference:** `downloads/rm32/src/brushed.rs`
 
-- **Requirement 8.1.2: Bidirectional Brushed Control**
-  - For brushed motors, the firmware MUST support bidirectional control (forward/reverse) based on throttle input.
-  - **C Reference:** `Src/main.c:1621-1631` (Direction selection).
-  - **Rust Reference:** `downloads/rm32/src/brushed.rs:43-57` (Bidirectional mapping).
+- **REQ-FEAT-BRUSHED_BIDIR:** Bidirectional forward/reverse control for brushed motors.
+  - **C Reference:** `Src/main.c:1621-1631`
+  - **Rust Reference:** `downloads/rm32/src/brushed.rs:43-57`
 
-## 8.2 Gimbal Mode
+## Gimbal Mode
 
-- **Requirement 8.2.1: Direct Angle Mapping**
-  - In Gimbal Mode, the input signal MUST map directly to the sinusoidal angle of the magnetic field, rather than motor speed.
-  - **C Reference:** `Src/main.c:269-270` (Mode description), `Src/main.c:2270` (Usage in stepper/sine).
-  - **Rust Reference:** `downloads/rm32/src/sine.rs` (Support for gimbal angle mapping).
+- **REQ-FEAT-GIMBAL_MODE:** Direct input-to-sinusoidal-angle mapping.
+  - **C Reference:** `Src/main.c:269-270`, `Src/main.c:2270`
+  - **Rust Reference:** `downloads/rm32/src/sine.rs`
 
-## 8.3 Bench Testing Modes (Fixed Output)
+## Bench Testing Modes
 
-- **Requirement 8.3.1: Fixed Duty Mode**
-  - The firmware MUST support a compile-time option to bypass input signals and run at a constant, hardcoded duty cycle.
-  - **C Reference:** `Src/main.c:1115-1116` (`#ifdef FIXED_DUTY_MODE`).
-  - **Rust Reference:** `downloads/rm32/src/fixed_mode.rs:8-11` (`fixed_duty_input`).
+- **REQ-FEAT-FIXED_DUTY:** Bypass input signal, run at constant hardcoded duty cycle.
+  - **C Reference:** `Src/main.c:1115-1116`
+  - **Rust Reference:** `downloads/rm32/src/fixed_mode.rs:8-11`
 
-- **Requirement 8.3.2: Fixed Speed Mode**
-  - The firmware MUST support a compile-time option to bypass input signals and maintain a constant motor RPM using the speed control PID loop.
-  - **C Reference:** `Src/main.c:1786-1791` (`#ifdef FIXED_SPEED_MODE`).
-  - **Rust Reference:** `downloads/rm32/src/fixed_mode.rs:16-19` (`fixed_speed_target`).
+- **REQ-FEAT-FIXED_SPEED:** Bypass input signal, maintain constant mechanical RPM.
+  - **C Reference:** `Src/main.c:1786-1791`
+  - **Rust Reference:** `downloads/rm32/src/fixed_mode.rs:16-19`
+
+## Debug & Extra Features
+
+- **REQ-FEAT-PULSE_OUT:** Support for an optional pulse output signal for debugging.
+  - **C Reference:** `Src/main.c:456` (`#ifdef USE_PULSE_OUT`)
+  - **Rust Reference:** `downloads/rm32_stm32/src/phase.rs:119` (`pulse_toggle`), `downloads/rm32_stm32/src/bin/main.rs:58` (wiring)

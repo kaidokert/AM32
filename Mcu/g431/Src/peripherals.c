@@ -60,7 +60,7 @@ void initAfterJump()
     __enable_irq();
 }
 
-void SystemClock_Config(void)
+void SystemClock_Config(void) /* REQTRK: REQ-HW-CLK-CFG */
 {
   LL_FLASH_SetLatency(LL_FLASH_LATENCY_4);
   while (LL_FLASH_GetLatency()!= LL_FLASH_LATENCY_4) ;

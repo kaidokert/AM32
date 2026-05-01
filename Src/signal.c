@@ -31,7 +31,7 @@ uint32_t average_packet_length;
 uint16_t dshot_frametime_high = 50000;
 uint16_t dshot_frametime_low = 0;
 
-void computeMSInput()
+void computeMSInput() /* REQTRK: DEAD-SIG-MULTISHOT */
 {
 
     int lastnumber = dma_buffer[0];
@@ -46,7 +46,7 @@ void computeMSInput()
     }
 }
 
-void computeServoInput()
+void computeServoInput() /* REQTRK: REQ-SIG-SERVO_PWM, REQ-SIG-SERVO_STICK_CAL */
 {
     if (((dma_buffer[1] - dma_buffer[0]) > 800) && ((dma_buffer[1] - dma_buffer[0]) < 2200)) {
 				signaltimeout = 0;
@@ -115,7 +115,7 @@ void computeServoInput()
     }
 }
 
-void transfercomplete()
+void transfercomplete() /* REQTRK: REQ-SIG-AUTO_DETECT */
 {
 #ifndef MCU_F031   // f031 does not use software EXTI event to process dshot
     if (armed && dshot_telemetry) {
@@ -199,7 +199,7 @@ void transfercomplete()
 }
 
 void checkDshot()
-{
+{ /* REQTRK: REQ-SIG-INPUT_DETECTION */
     if ((smallestnumber >= 1) && (smallestnumber < 4) && (average_signal_pulse < 60)) {
         ic_timer_prescaler = 0;
         if (CPU_FREQUENCY_MHZ > 100) {
@@ -227,7 +227,7 @@ void checkDshot()
     }
 }
 void checkServo()
-{
+{ /* REQTRK: REQ-SIG-INPUT_DETECTION */
     if (smallestnumber > 200 && smallestnumber < 20000) {
         servoPwm = 1;
         ic_timer_prescaler = CPU_FREQUENCY_MHZ - 1;
@@ -237,7 +237,7 @@ void checkServo()
 }
 
 void detectInput()
-{
+{ /* REQTRK: REQ-SIG-INPUT_DETECTION */
     smallestnumber = 20000;
     average_signal_pulse = 0;
     int lastnumber = dma_buffer[0];

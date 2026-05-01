@@ -53,7 +53,7 @@ void maskPhaseInterrupts()
 
 void enableCompInterrupts() { EXTI->IMR1 |= current_EXTI_LINE; }
 
-void changeCompInput()
+void changeCompInput() /* REQTRK: REQ-HW-MULTI_COMPARATOR */
 {
     if (step == 1 || step == 4) { // c floating
 

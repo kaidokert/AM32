@@ -31,7 +31,7 @@ extern char prop_brake_active;
 #endif
 
 void proportionalBrake()
-{ // alternate all channels between braking (ABC LOW)
+{ /* REQTRK: REQ-HW-PHASE-BRAKE_PROP */ // alternate all channels between braking (ABC LOW)
     // and coasting (ABC float) put lower channel into
     // alternate mode and turn upper OFF for each
     // channel
@@ -59,6 +59,7 @@ void proportionalBrake()
 
 void phaseBPWM()
 {
+    /* REQTRK: REQ-HW-PHASE-STATE_CTRL */
     if (!eepromBuffer.comp_pwm) { // for future
         LL_GPIO_SetPinMode(PHASE_B_GPIO_PORT_LOW, PHASE_B_GPIO_LOW,
             LL_GPIO_MODE_OUTPUT);
@@ -287,6 +288,7 @@ void phaseALOW()
 
 void allOff()
 {
+    /* REQTRK: REQ-HW-PHASE-ALL_OFF */
     phaseAFLOAT();
     phaseBFLOAT();
     phaseCFLOAT();
@@ -294,6 +296,7 @@ void allOff()
 
 void comStep(char newStep)
 {
+    /* REQTRK: REQ-HW-PHASE-COMMUTATION */
     switch (newStep) {
     case 1: // A-B
         phaseCFLOAT();
@@ -340,7 +343,7 @@ void comStep(char newStep)
 }
 
 void fullBrake()
-{ // full braking shorting all low sides
+{ /* REQTRK: REQ-HW-PHASE-BRAKE_FULL */ // full braking shorting all low sides
     phaseALOW();
     phaseBLOW();
     phaseCLOW();

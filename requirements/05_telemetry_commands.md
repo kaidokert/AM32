@@ -1,29 +1,53 @@
 # 05 Telemetry & Commands
 
-This document covers the communication of ESC data back to the controller and the processing of special DShot commands.
+This document covers telemetry reporting and DShot command processing.
 
-## 5.1 Extended DShot Telemetry (EDT)
+## Extended DShot Telemetry (EDT)
 
-- **Requirement 5.1.1: EDT Scheduling**
-  - Extended telemetry (Current, Voltage, Temperature) MUST be multiplexed into the bidirectional DShot response, alternating with eRPM frames at configured rates.
-  - **C Reference:** `Src/dshot.c:186-215` (`make_dshot_package` with scheduler).
-  - **Rust Reference:** `downloads/rm32/src/edt.rs` (`EdtScheduler` logic), `downloads/rm32_stm32/src/isr_handlers.rs:118-128`.
+- **REQ-TELEM-EDT_SCHEDULING:** Multiplex Current, Voltage, and Temperature into bidirectional DShot response.
+  - **C Reference:** `Src/dshot.c:186-215` (`make_dshot_package` with scheduler)
+  - **Rust Reference:** `downloads/rm32/src/edt.rs`, `downloads/rm32_stm32/src/isr_handlers.rs:118-128`
 
-- **Requirement 5.1.2: Telemetry Data Scaling**
-  - Telemetry data MUST be scaled according to the DShot/KISS standards (e.g., 50mA per LSB for current, 25mV per LSB for voltage).
-  - **C Reference:** `Src/dshot.c:203-207` (Scaling for Current/Voltage).
-  - **Rust Reference:** `downloads/rm32/src/edt.rs:80-92` (EDT scaling logic).
+- **REQ-TELEM-EDT_STATE_MANAGEMENT:** Handling of EDT initialization and de-initialization sequences.
+  - **C Reference:** `Src/dshot.c:262-270`
+  - **Rust Reference:** `downloads/rm32/src/dshot_commands.rs`
 
-## 5.2 DShot Commands (1-47)
+- **REQ-TELEM-EDT_SCALING:** Telemetry MUST be scaled to DShot/KISS standards (e.g., 50mA/LSB, 25mV/LSB).
+  - **C Reference:** `Src/dshot.c:203-207` (Scaling for Current/Voltage)
+  - **Rust Reference:** `downloads/rm32/src/edt.rs:80-92`
 
-- **Requirement 5.2.1: Special Command Processing**
-  - The firmware MUST process DShot commands (values 1-47) received over the signal line, including direction changes, beep requests, and settings saves.
-  - **C Reference:** `Src/dshot.c:217-300` (Command switch-case).
-  - **Rust Reference:** `downloads/rm32/src/dshot_commands.rs` (`CommandProcessor` and `process` method).
+- **REQ-TELEM-BIDIR_CHECKSUM:** Calculation of 4-bit inverted XOR checksum for bidirectional DShot telemetry.
+  - **C Reference:** `Src/dshot.c:294-302`
+  - **Rust Reference:** `downloads/rm32/src/dshot.rs`
 
-## 5.3 Programming Mode
+- **REQ-TELEM-GCR_ENCODING:** Group Code Recording (GCR) encoding for bidirectional DShot physical layer.
+  - **C Reference:** `Src/dshot.c:304-315`
+  - **Rust Reference:** `downloads/rm32/src/dshot.rs`
 
-- **Requirement 5.3.1: Interactive EEPROM Modification**
-  - The firmware MUST support a multi-step "Programming Mode" (triggered by DShot command 36) that allows the controller to write specific bytes to the ESC's EEPROM/Flash.
-  - **C Reference:** `Src/dshot.c:110-128` (Programming mode state machine).
-  - **Rust Reference:** `downloads/rm32/src/dshot_commands.rs:125-155` (`process_programming`).
+- **REQ-TELEM-NRZI_ENCODING:** NRZI encoding and RLL mapping for bidirectional DShot.
+  - **C Reference:** `Src/dshot.c:316-343`
+  - **Rust Reference:** `downloads/rm32/src/dshot.rs`
+
+## Telemetry Integration & Smoothing
+
+- **REQ-TELEM-CURRENT_SMOOTHING:** Noise filtering for ADC current readings via moving average.
+  - **C Reference:** `Src/main.c:390-403` (`getSmoothedCurrent`)
+  - **Rust Reference:** `downloads/rm32_stm32/src/main_loop.rs`
+
+- **REQ-TELEM-CURRENT_INTEGRATION:** Integration of instantaneous current to calculate total consumed mAh.
+  - **C Reference:** `Src/main.c:1035-1038`
+  - **Rust Reference:** `downloads/rm32_stm32/src/main_loop.rs`
+
+## DShot Commands
+
+- **REQ-TELEM-DSHOT_CMD:** Process DShot commands 1-47 (direction, beeps, saves, etc.).
+  - **C Reference:** `Src/dshot.c:217-300` (Command switch-case)
+  - **Rust Reference:** `downloads/rm32/src/dshot_commands.rs`
+
+- **REQ-TELEM-PROG_MODE:** Multi-step "Programming Mode" (cmd 36) for interactive EEPROM modification.
+  - **C Reference:** `Src/dshot.c:110-128` (Programming mode state machine)
+  - **Rust Reference:** `downloads/rm32/src/dshot_commands.rs:125-155`
+
+- **REQ-TELEM-INFO_PACKET:** Packaging of configuration data with CRC for telemetry transmission.
+  - **C Reference:** `Src/kiss_telemetry.c:35-41` (`makeInfoPacket`)
+  - **Rust Reference:** `downloads/rm32/src/telemetry.rs`

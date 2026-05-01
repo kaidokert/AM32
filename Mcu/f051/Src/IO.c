@@ -20,6 +20,7 @@ uint8_t buffer_padding = 0;
 
 void receiveDshotDma()
 {
+    /* REQTRK: REQ-HW-DSHOT-RX_DMA */
     out_put = 0;
 #ifdef USE_TIMER_3_CHANNEL_1
     RCC->APB1RSTR |= LL_APB1_GRP1_PERIPH_TIM3;
@@ -55,6 +56,7 @@ void receiveDshotDma()
 
 void sendDshotDma()
 {
+    /* REQTRK: REQ-HW-DSHOT-TX_DMA */
     out_put = 1;
 #ifdef USE_TIMER_3_CHANNEL_1
     //          // de-init timer 2
@@ -97,6 +99,7 @@ uint8_t getInputPinState() { return (INPUT_PIN_PORT->IDR & INPUT_PIN); }
 
 void setInputPolarityRising()
 {
+    /* REQTRK: REQ-HW-INPUT-PIN_CTRL */
     LL_TIM_IC_SetPolarity(IC_TIMER_REGISTER, IC_TIMER_CHANNEL,
         LL_TIM_IC_POLARITY_RISING);
 }

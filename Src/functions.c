@@ -19,7 +19,7 @@
 //     return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 // }
 
-long map(long x, long in_min, long in_max, long out_min, long out_max)
+long map(long x, long in_min, long in_max, long out_min, long out_max) /* REQTRK: REQ-UTIL-MATH */
 {
     if (x >= in_max)
         return out_max;
@@ -39,7 +39,7 @@ long map(long x, long in_min, long in_max, long out_min, long out_max)
         return map(x, in_mid + 1, in_max, out_mid, out_max);
 }
 
-uint32_t getAbsDif(int number1, int number2)
+uint32_t getAbsDif(int number1, int number2) /* REQTRK: REQ-UTIL-MATH */
 {
     int result = number1 - number2;
     if (result < 0) {
@@ -51,7 +51,7 @@ uint32_t getAbsDif(int number1, int number2)
 /*
   get current value of UTILITY_TIMER timer as 16bit microseconds
  */
-static inline uint16_t get_timer_us16(void) {
+static inline uint16_t get_timer_us16(void) { /* REQTRK: REQ-HW-TIMER_READ */
 #if defined(STMICRO)
     return UTILITY_TIMER->CNT;
 #elif defined(GIGADEVICES)
@@ -68,7 +68,7 @@ static inline uint16_t get_timer_us16(void) {
 /*
   delay by microseconds, max 65535
  */
-void delayMicros(uint32_t micros)
+void delayMicros(uint32_t micros) /* REQTRK: REQ-HW-TIMING */
 {
     const uint16_t cval_start = get_timer_us16();
     while ((uint16_t)(get_timer_us16() - cval_start) < (uint16_t)micros) {
@@ -78,7 +78,7 @@ void delayMicros(uint32_t micros)
 /*
   delay in millis, convenience wrapper around delayMicros
  */
-void delayMillis(uint32_t millis)
+void delayMillis(uint32_t millis) /* REQTRK: REQ-HW-TIMING */
 {
     while (millis-- > 0) {
         delayMicros(1000UL);
@@ -86,7 +86,7 @@ void delayMillis(uint32_t millis)
 }
 
 uint8_t update_crc8(uint8_t crc, uint8_t crc_seed)
-{
+{ /* REQTRK: REQ-UTIL-CRC8 */
     uint8_t crc_u, i;
     crc_u = crc;
     crc_u ^= crc_seed;
@@ -108,7 +108,7 @@ uint8_t get_crc8(uint8_t* Buf, uint8_t BufLen)
 #ifdef MCU_AT421
 void gpio_mode_QUICK(gpio_type* gpio_periph, uint32_t mode,
     uint32_t pull_up_down, uint32_t pin)
-{
+{ /* REQTRK: REQ-HW-GPIO_CONFIG */
     gpio_periph->cfgr = (((((gpio_periph->cfgr))) & (~(((pin * pin) * (0x3UL << (0U)))))) | (((pin * pin) * mode)));
 }
 void gpio_mode_set(gpio_type* gpio_periph, uint32_t mode, uint32_t pull_up_down,
@@ -122,7 +122,7 @@ void gpio_mode_set(gpio_type* gpio_periph, uint32_t mode, uint32_t pull_up_down,
 #ifdef MCU_AT415
 void gpio_mode_QUICK(gpio_type* gpio_periph, uint32_t mode,
     uint32_t pull_up_down, uint32_t pin)
-{
+{ /* REQTRK: REQ-HW-GPIO_CONFIG */
     __disable_irq();
     gpio_init_type gpio_init_struct;
     gpio_default_para_init(&gpio_init_struct);

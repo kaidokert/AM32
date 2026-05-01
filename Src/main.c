@@ -373,7 +373,7 @@ uint8_t desync_happened = 0;
 #endif
 char maximum_throttle_change_ramp = 1;
 
-char crawler_mode = 0; // no longer used //
+char crawler_mode = 0; // no longer used // /* REQTRK: DEAD-PROT-CRAWLER_MODE */
 uint16_t velocity_count = 0;
 uint16_t velocity_count_threshold = 75;
 
@@ -571,7 +571,7 @@ uint8_t ubAnalogWatchdogStatus = RESET;
 volatile char input_ready = 0;
 #endif
 
-int32_t doPidCalculations(struct fastPID* pidnow, int actual, int target)
+int32_t doPidCalculations(struct fastPID* pidnow, int actual, int target) /* REQTRK: REQ-MOTOR-PID_CURRENT, REQ-MOTOR-PID_STALL */
 {
 
     pidnow->error = actual - target;
@@ -597,7 +597,7 @@ int32_t doPidCalculations(struct fastPID* pidnow, int actual, int target)
     return pidnow->pid_output;
 }
 
-void loadEEpromSettings()
+void loadEEpromSettings() /* REQTRK: REQ-CFG-LAYOUT, REQ-CFG-VERSIONING */
 {
     read_flash_bin(eepromBuffer.buffer, eeprom_address, sizeof(eepromBuffer.buffer));
     if(eepromBuffer.eeprom_version < EEPROM_VERSION){
@@ -646,12 +646,12 @@ void loadEEpromSettings()
     }
     startup_max_duty_cycle = minimum_duty_cycle + 400;  
 
-    motor_kv = (eepromBuffer.motor_kv * 40) + 20;
+    motor_kv = (eepromBuffer.motor_kv * 40) + 20; /* REQTRK: REQ-CFG-KV_SCALING */
 #ifdef THREE_CELL_MAX
-		motor_kv =  motor_kv / 2;
+		motor_kv =  motor_kv / 2; /* REQTRK: REQ-CFG-KV_SCALING */
 #endif
 #ifdef ONE_TWO_CELL_MAX
-		motor_kv =  motor_kv / 16;
+		motor_kv =  motor_kv / 16; /* REQTRK: REQ-CFG-KV_SCALING */
 #endif
     setVolume(2);
     if (eepromBuffer.eeprom_version > 0) { // these commands weren't introduced until eeprom version 1.
@@ -664,6 +664,7 @@ void loadEEpromSettings()
             setVolume(eepromBuffer.beep_volume);
         }
 #endif
+        /* REQTRK: REQ-CFG-SERVO_SCALING */
         servo_low_threshold = (eepromBuffer.servo.low_threshold * 2) + 750; // anything below this point considered 0
         servo_high_threshold = (eepromBuffer.servo.high_threshold * 2) + 1750; // anything above this point considered 2000 (max)
         servo_neutral = (eepromBuffer.servo.neutral) + 1374;
@@ -672,7 +673,7 @@ void loadEEpromSettings()
         low_cell_volt_cutoff = eepromBuffer.low_cell_volt_cutoff + 250; // 2.5 to 3.5 volts per cell range
         
         
-#ifndef HAS_HALL_SENSORS
+#ifndef HAS_HALL_SENSORS /* REQTRK: DEAD-FEAT-HALL_SENSORS */
         eepromBuffer.use_hall_sensors = 0;
 #endif
 
@@ -688,6 +689,7 @@ void loadEEpromSettings()
         }
 
         if(eepromBuffer.driving_brake_strength < 10){
+            /* REQTRK: REQ-CFG-DEAD_TIME */
             dead_time_override = DEAD_TIME + (150 - (eepromBuffer.driving_brake_strength * 10));
             if (dead_time_override > 200) {
                 dead_time_override = 200;
@@ -788,11 +790,13 @@ void loadEEpromSettings()
 
 void saveEEpromSettings()
 {
+    /* REQTRK: REQ-CFG-SAVE_TO_FLASH */
     save_flash_nolib(eepromBuffer.buffer, sizeof(eepromBuffer.buffer), eeprom_address);
 }
 
 uint16_t getSmoothedCurrent()
 {
+    /* REQTRK: REQ-TELEM-CURRENT_SMOOTHING */
     total = total - readings[readIndex];
     readings[readIndex] = ADC_raw_current;
     total = total + readings[readIndex];
@@ -806,6 +810,7 @@ uint16_t getSmoothedCurrent()
 
 void getBemfState()
 {
+    /* REQTRK: REQ-MOTOR-BEMF_POLLING */
     uint8_t current_state = 0;
 #if defined(MCU_F031) || defined(MCU_G031)
     if (step == 1 || step == 4) {
@@ -858,7 +863,7 @@ void commutate()
         }
         rising = !(step % 2);
     }
-#ifdef INVERTED_EXTI
+#ifdef INVERTED_EXTI /* REQTRK: REQ-SIG-INVERTED_EXTI */
     rising = !rising;
 #endif
     __disable_irq(); // don't let dshot interrupt
@@ -876,7 +881,7 @@ void commutate()
     zcfound = 0;
     commutation_intervals[step - 1] = commutation_interval; // just used to calulate average
     
-#ifdef USE_PULSE_OUT
+#ifdef USE_PULSE_OUT /* REQTRK: REQ-FEAT-PULSE_OUT */
 	if(step == 1 || step == 4  ){
     WRITE_REG(RPM_PULSE_PORT->ODR, READ_REG(RPM_PULSE_PORT->ODR) ^ RPM_PULSE_PIN);
 	}
@@ -885,6 +890,7 @@ void commutate()
 
 void PeriodElapsedCallback()
 {
+    /* REQTRK: REQ-MOTOR-COMMUTATION_TIMING */
     DISABLE_COM_TIMER_INT(); // disable interrupt
     commutate();
     commutation_interval = ((commutation_interval)+((lastzctime + thiszctime) >> 1))>>1;
@@ -902,7 +908,7 @@ void PeriodElapsedCallback()
     }
 }
 
-void interruptRoutine()
+void interruptRoutine() /* REQTRK: REQ-MOTOR-BEMF_ZC */
 {
 //   if (average_interval > 125) {
 //        if ((INTERVAL_TIMER_COUNT < 125) && (duty_cycle < 600) && (zero_crosses < 500)) { // should be impossible, desync?exit anyway
@@ -936,6 +942,7 @@ void interruptRoutine()
 
 void startMotor()
 {
+    /* REQTRK: REQ-MOTOR-STARTUP_SEQUENCE */
     if (running == 0) {
         commutate();
         commutation_interval = 10000;
@@ -949,8 +956,7 @@ void setInput()
 {
     if (eepromBuffer.bi_direction) {
         if (dshot == 0) {
-            if (eepromBuffer.rc_car_reverse) {
-                if (newinput > (1000 + (servo_dead_band << 1))) {
+           if (eepromBuffer.rc_car_reverse) { /* REQTRK: REQ-PROT-RC_CAR_REVERSE */                if (newinput > (1000 + (servo_dead_band << 1))) {
                     if (forward == eepromBuffer.dir_reversed) {
                         adjusted_input = 0;
                         //               if (running) {
@@ -1103,7 +1109,7 @@ void setInput()
         adjusted_input = newinput;
     }
 #ifndef BRUSHED_MODE
-    if ((bemf_timeout_happened > bemf_timeout) && eepromBuffer.stuck_rotor_protection) {
+    if ((bemf_timeout_happened > bemf_timeout) && eepromBuffer.stuck_rotor_protection) { /* REQTRK: REQ-PROT-STUCK_ROTOR */
         allOff();
         maskPhaseInterrupts();
         input = 0;
@@ -1115,7 +1121,7 @@ void setInput()
 #ifdef FIXED_DUTY_MODE
         input = FIXED_DUTY_MODE_POWER * 20 + 47;
 #else
-        if (eepromBuffer.use_sine_start) {
+        if (eepromBuffer.use_sine_start) { /* REQTRK: REQ-MOTOR-SINE_START */
             if (adjusted_input < 30) { // dead band ?
                 input = 0;
             }
@@ -1312,7 +1318,7 @@ if (!stepper_sine && armed) {
 #endif
 }
 
-void tenKhzRoutine()
+void tenKhzRoutine() /* REQTRK: REQ-RES-TICK_RATE */
 { // 20khz as of 2.00 to be renamed
     duty_cycle = duty_cycle_setpoint;
     tenkhzcounter++;
@@ -1326,7 +1332,7 @@ void tenKhzRoutine()
                     armed_timeout_count++;
                     if (armed_timeout_count > LOOP_FREQUENCY_HZ) { // one second
                         if (zero_input_count > 30) {
-                            armed = 1;
+                            armed = 1; /* REQTRK: REQ-STATE-ARMED */
 #ifdef USE_LED_STRIP
                             //	send_LED_RGB(0,0,0);
                             delayMicros(1000);
@@ -1340,7 +1346,7 @@ void tenKhzRoutine()
                                 for (int i = 0; i < cell_count; i++) {
                                     playInputTune();
                                     delayMillis(100);
-                                    RELOAD_WATCHDOG_COUNTER();
+                                    RELOAD_WATCHDOG_COUNTER(); /* REQTRK: REQ-SAFE-WATCHDOG */
                                 }
                             } else {
 #ifdef MCU_AT415
@@ -1378,7 +1384,7 @@ void tenKhzRoutine()
 #ifndef BRUSHED_MODE
 
     if (!stepper_sine) {
-#ifndef CUSTOM_RAMP
+#ifndef CUSTOM_RAMP /* REQTRK: REQ-MOTOR-RAMP_CUSTOM */
         if (old_routine && running) {
 	//				send_LED_RGB(255, 0, 0);
             maskPhaseInterrupts();
@@ -1438,7 +1444,7 @@ void tenKhzRoutine()
         }
         if (ramp_count > ramp_divider) {
           ramp_count = 0;
-#ifdef VOLTAGE_BASED_RAMP
+#ifdef VOLTAGE_BASED_RAMP /* REQTRK: REQ-MOTOR-VOLTAGE_RAMP */
             uint16_t voltage_based_max_change = map(battery_voltage, 800, 2200, 10, 1);
             if (average_interval > 200) {
                 max_duty_cycle_change = voltage_based_max_change;
@@ -1498,7 +1504,7 @@ void tenKhzRoutine()
     if (getInputPinState()) {
         signaltimeout++;
         if (signaltimeout > LOOP_FREQUENCY_HZ) {
-            NVIC_SystemReset();
+            NVIC_SystemReset(); /* REQTRK: REQ-STATE-BOOTLOADER_REBOOT */
         }
     } else {
         signaltimeout = 0;
@@ -1511,6 +1517,7 @@ void tenKhzRoutine()
 
 void processDshot()
 {
+    /* REQTRK: REQ-SIG-DSHOT_PROCESS */
     if (compute_dshot_flag == 1) {
         computeDshotDMA();
         compute_dshot_flag = 0;
@@ -1525,6 +1532,7 @@ void processDshot()
 
 void advanceincrement()
 {
+    /* REQTRK: REQ-MOTOR-SINE_PHASE_STEP */
     if (!forward) {
         phase_A_position++;
         if (phase_A_position > 359) {
@@ -1568,6 +1576,7 @@ void advanceincrement()
 
 void zcfoundroutine()
 { // only used in polling mode, blocking routine.
+    /* REQTRK: REQ-MOTOR-POLLING_ZC_HANDLER */
     thiszctime = INTERVAL_TIMER_COUNT;
     SET_INTERVAL_TIMER_COUNT(0);
     commutation_interval = (thiszctime + (3 * commutation_interval)) / 4;
@@ -1611,7 +1620,7 @@ void zcfoundroutine()
     }
  #endif
 }
-#ifdef BRUSHED_MODE
+#ifdef BRUSHED_MODE /* REQTRK: REQ-FEAT-BRUSHED_MODE */
 void runBrushedLoop()
 {
 
@@ -1674,7 +1683,7 @@ void runBrushedLoop()
 /*
   check device info from the bootloader, confirming pin code and eeprom location
  */
-static void checkDeviceInfo(void)
+static void checkDeviceInfo(void) /* REQTRK: REQ-CFG-BOOTLOADER_INFO */
 {
 #define DEVINFO_MAGIC1 0x5925e3da
 #define DEVINFO_MAGIC2 0x4eb863d9
@@ -1709,7 +1718,7 @@ static void checkDeviceInfo(void)
 #ifdef FAKE_FIRMWARE
 int init(void)
 #else
-int main(void)
+int main(void) /* REQTRK: REQ-HW-STM32F0, REQ-HW-STM32G0, REQ-HW-STM32L4 */
 #endif
 {
 
@@ -1753,9 +1762,9 @@ int main(void)
     }
 
 #ifdef MCU_F031
-    GPIOF->BSRR = LL_GPIO_PIN_6; // uncomment to take bridge out of standby mode
+    GPIOF->BSRR = LL_GPIO_PIN_6; /* REQTRK: DEAD-HW-BRIDGE_ENABLE */ // uncomment to take bridge out of standby mode
                                  // and set oc level
-    GPIOF->BRR = LL_GPIO_PIN_7; // out of standby mode
+    GPIOF->BRR = LL_GPIO_PIN_7; /* REQTRK: DEAD-HW-BRIDGE_ENABLE */ // out of standby mode
     GPIOA->BRR = LL_GPIO_PIN_11;
 #endif
 #ifdef MCU_G031
@@ -1775,15 +1784,15 @@ int main(void)
     MX_IWDG_Init();
     LL_IWDG_ReloadCounter(IWDG);
 #else
-#if defined(FIXED_DUTY_MODE) || defined(FIXED_SPEED_MODE)
+#if defined(FIXED_DUTY_MODE) || defined(FIXED_SPEED_MODE) /* REQTRK: REQ-FEAT-FIXED_DUTY, REQ-FEAT-FIXED_SPEED */
     MX_IWDG_Init();
-    RELOAD_WATCHDOG_COUNTER();
+    RELOAD_WATCHDOG_COUNTER(); /* REQTRK: REQ-SAFE-WATCHDOG */
     inputSet = 1;
     armed = 1;
     adjusted_input = 48;
     newinput = 48;
 		comStep(2);
-#ifdef FIXED_SPEED_MODE
+#ifdef FIXED_SPEED_MODE /* REQTRK: REQ-FEAT-FIXED_SPEED */
     use_speed_control_loop = 1;
     eepromBuffer.use_sine_start = 0;
     target_e_com_time = 60000000 / FIXED_SPEED_MODE_RPM / (eepromBuffer.motor_poles / 2);
@@ -1796,17 +1805,17 @@ int main(void)
     commutation_interval = 5000;
     eepromBuffer.use_sine_start = 0;
     maskPhaseInterrupts();
-    playBrushedStartupTune();
+    playBrushedStartupTune(); /* REQTRK: REQ-UI-STARTUP_TUNE */
 #else
  #ifdef MCU_AT415
     play_tone_flag = 5;
  #else
-    playStartupTune();
+    playStartupTune(); /* REQTRK: REQ-UI-STARTUP_TUNE */
 	#endif
 #endif
     zero_input_count = 0;
     MX_IWDG_Init();
-    RELOAD_WATCHDOG_COUNTER();
+    RELOAD_WATCHDOG_COUNTER(); /* REQTRK: REQ-SAFE-WATCHDOG */
 #ifdef GIMBAL_MODE
     eepromBuffer.bi_direction = 1;
     eepromBuffer.use_sine_start = 1;
@@ -1832,9 +1841,9 @@ int main(void)
     REV_Id = DBGMCU->IDCODE >> 16;
 
     if (REV_Id >= 4096) {
-        temperature_offset = 0;
+        temperature_offset = 0; /* REQTRK: DEAD-HW-F051_TEMP_OFFSET */
     } else {
-        temperature_offset = 230;
+        temperature_offset = 230; /* REQTRK: DEAD-HW-F051_TEMP_OFFSET */
     }
 
 #endif
@@ -1844,7 +1853,7 @@ int main(void)
     setInputPullUp();
 #endif
 
-#ifdef USE_STARTUP_BOOST
+#ifdef USE_STARTUP_BOOST /* REQTRK: REQ-MOTOR-STARTUP_BOOST */
   min_startup_duty = min_startup_duty + 200 + ((eepromBuffer.pwm_frequency * 100)/24);
   minimum_duty_cycle = minimum_duty_cycle + 50 + ((eepromBuffer.pwm_frequency * 50 )/24);
   startup_max_duty_cycle = startup_max_duty_cycle + 400;
@@ -1863,6 +1872,7 @@ e_com_time = ((commutation_intervals[0] + commutation_intervals[1] + commutation
 #endif
 
 #ifdef NEED_INPUT_READY
+    /* REQTRK: REQ-SIG-INPUT_DISPATCH */
  #ifdef MCU_F031
     if (input_ready) {
     setInput(); 
@@ -1876,6 +1886,7 @@ e_com_time = ((commutation_intervals[0] + commutation_intervals[1] + commutation
 #endif
 #endif
 if(zero_crosses < 5){
+    /* REQTRK: REQ-MOTOR-BEMF_FILTER_ADAPT */
     if(eepromBuffer.bi_direction){
      min_bemf_counts_up = TARGET_MIN_BEMF_COUNTS + 1;
      min_bemf_counts_down = TARGET_MIN_BEMF_COUNTS + 1;
@@ -1888,13 +1899,13 @@ if(zero_crosses < 5){
 	  min_bemf_counts_down = TARGET_MIN_BEMF_COUNTS;
 }
 
-       RELOAD_WATCHDOG_COUNTER();
+       RELOAD_WATCHDOG_COUNTER(); /* REQTRK: REQ-SAFE-WATCHDOG */
 
-        if (eepromBuffer.variable_pwm == 1) {      // uses range defined by pwm frequency setting
+       if (eepromBuffer.variable_pwm == 1) { /* REQTRK: REQ-MOTOR-VARIABLE_PWM */      // uses range defined by pwm frequency setting
             tim1_arr = map(commutation_interval, 96, 200, TIMER1_MAX_ARR / 2,
                 TIMER1_MAX_ARR);
         }
-        if (eepromBuffer.variable_pwm == 2) {      // uses automatic range   
+        if (eepromBuffer.variable_pwm == 2) { /* REQTRK: REQ-MOTOR-VARIABLE_PWM */     // uses automatic range   
           if(average_interval < 250 && average_interval > 100){
             tim1_arr = average_interval * (CPU_FREQUENCY_MHZ/9);
           }
@@ -1906,6 +1917,7 @@ if(zero_crosses < 5){
           } 
         }
         if (signaltimeout > (LOOP_FREQUENCY_HZ >> 1)) { // half second timeout when armed;
+            /* REQTRK: REQ-SAFE-SIGNAL_TIMEOUT */
             if (armed) {
                 allOff();
                 armed = 0;
@@ -1934,6 +1946,7 @@ if(zero_crosses < 5){
             }
         }
 #ifdef USE_CUSTOM_LED
+        /* REQTRK: REQ-UI-CUSTOM_LED */
         if ((input >= 47) && (input < 1947)) {
             if (ledcounter > (2000 >> forward)) {
                 GPIOB->BSRR = LL_GPIO_PIN_3;
@@ -1952,7 +1965,7 @@ if(zero_crosses < 5){
         }
 #endif
 
-        if (tenkhzcounter > LOOP_FREQUENCY_HZ) { // 1s sample interval 10000
+        if (tenkhzcounter > LOOP_FREQUENCY_HZ) { /* REQTRK: REQ-TELEM-CURRENT_INTEGRATION */
             consumed_current += (actual_current << 16) / 360;
             tenkhzcounter = 0;
         }
@@ -1974,7 +1987,7 @@ if(zero_crosses < 5){
                 bemf_timeout_happened = 0;
             }
         } else {
-            if (adjusted_input < 150) { // startup duty cycle should be low enough to not burn motor
+            if (adjusted_input < 150) { /* REQTRK: REQ-PROT-STALL_TIMEOUT_ADAPT */ // startup duty cycle should be low enough to not burn motor
                 bemf_timeout = 100;
             } else {
                 bemf_timeout = 10;
@@ -1982,7 +1995,7 @@ if(zero_crosses < 5){
         }
 #endif
         average_interval = e_com_time / 3;
-        if (desync_check && zero_crosses > 10) {
+        if (desync_check && zero_crosses > 10) { /* REQTRK: REQ-PROT-DESYNC_DETECTION */
             if ((getAbsDif(last_average_interval, average_interval) > average_interval >> 1) && (average_interval < 2000)) { // throttle resitricted before zc 20.
                 zero_crosses = 0;
                 desync_happened++;
@@ -2001,7 +2014,7 @@ if(zero_crosses < 5){
         }
 
 #if !defined(MCU_G031) && !defined(NEED_INPUT_READY)
-        if (dshot_telemetry && (commutation_interval > DSHOT_PRIORITY_THRESHOLD)) {
+        if (dshot_telemetry && (commutation_interval > DSHOT_PRIORITY_THRESHOLD)) { /* REQTRK: REQ-RES-IRQ_PRIORITY_DYNAMIC */
              NVIC_SetPriority(IC_DMA_IRQ_NAME, 0);
              NVIC_SetPriority(COM_TIMER_IRQ, 1);
              NVIC_SetPriority(COMPARATOR_IRQ, 1);
@@ -2011,24 +2024,24 @@ if(zero_crosses < 5){
              NVIC_SetPriority(COMPARATOR_IRQ, 0);
          }
 #endif
-        if (send_telemetry) {
+        if (send_telemetry) { /* REQTRK: REQ-TELEM-SERIAL_UART */
 #ifdef USE_SERIAL_TELEMETRY
             makeTelemPackage((int8_t)degrees_celsius, battery_voltage, actual_current,
                 (uint16_t)(consumed_current >> 16), e_rpm);
             send_telem_DMA(10);
             send_telemetry = 0;
 #endif
-        } else if(send_esc_info_flag ) {
+        } else if(send_esc_info_flag ) { /* REQTRK: REQ-TELEM-SERIAL_UART */
            makeInfoPacket();
            send_telem_DMA(49);
            send_esc_info_flag = 0;
         }
-        if (PROCESS_ADC_FLAG == 1) { // for adc and telemetry set adc counter at 1khz loop rate
+        if (PROCESS_ADC_FLAG == 1) { /* REQTRK: REQ-HW-ADC_PROCESSING */ // for adc and telemetry set adc counter at 1khz loop rate
 #if defined(STMICRO)
             ADC_DMA_Callback();
             LL_ADC_REG_StartConversion(ADC1);
 #ifdef USE_ADC_1_2
-          LL_ADC_REG_StartConversion(ADC2);
+          LL_ADC_REG_StartConversion(ADC2); /* REQTRK: REQ-HW-DUAL_ADC */
 #endif          
             converted_degrees = __LL_ADC_CALC_TEMPERATURE(3300, ADC_raw_temp, LL_ADC_RESOLUTION_12B);
 #endif
@@ -2042,7 +2055,7 @@ if(zero_crosses < 5){
             ADC_DMA_Callback();
             adc_ordinary_software_trigger_enable(ADC1, TRUE);
     #ifdef USE_NTC
-            converted_degrees = getNTCDegrees(ADC_raw_ntc);
+            converted_degrees = getNTCDegrees(ADC_raw_ntc); /* REQTRK: REQ-HW-EXTERNAL_NTC */
     #else     
             converted_degrees = getConvertedDegrees(ADC_raw_temp);
     #endif
@@ -2058,7 +2071,7 @@ if(zero_crosses < 5){
             if (actual_current < 0) {
                 actual_current = 0;
             }             
-            if (eepromBuffer.low_voltage_cut_off == 1) {  
+            if (eepromBuffer.low_voltage_cut_off == 1) {  /* REQTRK: REQ-PROT-LVC */
                 if (battery_voltage < (cell_count * low_cell_volt_cutoff)) {
                   low_voltage_count++;
                 } else {
@@ -2067,7 +2080,7 @@ if(zero_crosses < 5){
                   }
                 }
             }
-            if (eepromBuffer.low_voltage_cut_off == 2 ){   // absolute cut off
+            if (eepromBuffer.low_voltage_cut_off == 2) { /* REQTRK: REQ-PROT-LVC */   // absolute cut off
               if (battery_voltage <  eepromBuffer.absolute_voltage_cutoff) {
                 low_voltage_count++;    
                 } else {
@@ -2113,6 +2126,7 @@ if(zero_crosses < 5){
                                           // by default to keep hardware / motors
                                           // protected but can slow down the response
                                           // in the very low end a little.
+                /* REQTRK: REQ-PROT-ERPM_LIMIT */
                 duty_cycle_maximum = map(k_erpm, low_rpm_level, high_rpm_level, throttle_max_at_low_rpm,
                     throttle_max_at_high_rpm); // for more performance lower the
                                                // high_rpm_level, set to a
@@ -2121,11 +2135,11 @@ if(zero_crosses < 5){
 							duty_cycle_maximum = 2000;
 						}
 
-            if (degrees_celsius > eepromBuffer.limits.temperature) {
+            if (degrees_celsius > eepromBuffer.limits.temperature) { /* REQTRK: REQ-PROT-TEMP_LIMIT */
               duty_cycle_maximum = map(degrees_celsius, eepromBuffer.limits.temperature - 10, eepromBuffer.limits.temperature + 10,
                 throttle_max_at_high_rpm / 2, 1);
             }
-            if (zero_crosses < 100 && commutation_interval > 500) {
+            if (zero_crosses < 100 && commutation_interval > 500) { /* REQTRK: REQ-MOTOR-ADAPTIVE_ADVANCE */
               filter_level = 12;
             } else {
               filter_level = map(average_interval, 100, 500, 3, 12);
@@ -2134,7 +2148,7 @@ if(zero_crosses < 5){
               filter_level = 2;
             }
 
-            if (eepromBuffer.auto_advance) {
+            if (eepromBuffer.auto_advance) { /* REQTRK: REQ-MOTOR-ADAPTIVE_ADVANCE */
               auto_advance_level = map(duty_cycle, 100, 2000, 13, 23);
             }
 
@@ -2158,7 +2172,7 @@ if(zero_crosses < 5){
                 }
             }
 #endif
-            if (INTERVAL_TIMER_COUNT > 45000 && running == 1) {
+            if (INTERVAL_TIMER_COUNT > 45000 && running == 1) { /* REQTRK: REQ-MOTOR-STOP_DETECTION */
                 bemf_timeout_happened++;
 
                 maskPhaseInterrupts();
@@ -2195,7 +2209,7 @@ if(zero_crosses < 5){
             }
 #else
 
-            if (input > 48 && armed) {
+            if (input > 48 && armed) { /* REQTRK: REQ-MOTOR-SINE_STEPPER_CONTROL */
 
                 if (input > 48 && input < 137) { // sine wave stepper
 

@@ -5,7 +5,7 @@ extern uint8_t get_crc8(uint8_t* Buf, uint8_t BufLen);
 
 uint8_t aTxBuffer[49] __attribute__((aligned(4)));
 
-void makeTelemPackage(int8_t temp, uint16_t voltage, uint16_t current, uint16_t consumption, uint16_t e_rpm)
+void makeTelemPackage(int8_t temp, uint16_t voltage, uint16_t current, uint16_t consumption, uint16_t e_rpm) /* REQTRK: REQ-TELEM-SERIAL_UART */
 {
     kiss_telem_pkt_t* telem_pkt = (kiss_telem_pkt_t*)aTxBuffer;
 
@@ -31,7 +31,7 @@ void makeTelemPackage(int8_t temp, uint16_t voltage, uint16_t current, uint16_t 
 }
 
 void makeInfoPacket()
-{
+{ /* REQTRK: REQ-TELEM-INFO_PACKET */
     for(int i = 0; i < 48; i++) {
         aTxBuffer[i] = eepromBuffer.buffer[i];
     }

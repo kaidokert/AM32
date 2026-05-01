@@ -36,7 +36,7 @@ void initCorePeripherals(void)
 #endif
 }
 
-void initAfterJump(void)
+void initAfterJump(void) /* REQTRK: REQ-HW-VECTOR_REMAP */
 {
     volatile uint32_t* VectorTable = (volatile uint32_t*)0x20000000;
     uint32_t vector_index = 0;
@@ -72,6 +72,7 @@ void initAfterJump(void)
 
 void SystemClock_Config(void)
 {
+    /* REQTRK: REQ-HW-CLK-CFG */
     LL_FLASH_SetLatency(LL_FLASH_LATENCY_1);
 
     if (LL_FLASH_GetLatency() != LL_FLASH_LATENCY_1) {
@@ -115,6 +116,7 @@ void SystemClock_Config(void)
 
 void MX_COMP1_Init(void)
 {
+    /* REQTRK: REQ-HW-COMP-INIT */
     LL_GPIO_InitTypeDef GPIO_InitStruct = { 0 };
 
     LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_GPIOA);
@@ -138,6 +140,7 @@ void MX_COMP1_Init(void)
 
 void MX_IWDG_Init(void)
 {
+    /* REQTRK: REQ-HW-WATCHDOG-CFG */
     IWDG->KR = 0x0000CCCCU;
     IWDG->KR = 0x00005555U;
     IWDG->PR = LL_IWDG_PRESCALER_16;
@@ -147,6 +150,7 @@ void MX_IWDG_Init(void)
 
 void MX_TIM1_Init(void)
 {
+    /* REQTRK: REQ-HW-PWM-MAIN_CFG */
     LL_TIM_InitTypeDef TIM_InitStruct = { 0 };
     LL_TIM_OC_InitTypeDef TIM_OC_InitStruct = { 0 };
     LL_TIM_BDTR_InitTypeDef TIM_BDTRInitStruct = { 0 };
@@ -364,6 +368,7 @@ void MX_GPIO_Init(void)
 
 void UN_TIM_Init(void)
 {
+    /* REQTRK: REQ-HW-INPUT-CAPTURE_CFG */
     // LL_TIM_InitTypeDef TIM_InitStruct = {0};
 
     LL_GPIO_InitTypeDef GPIO_InitStruct = { 0 };
@@ -562,6 +567,7 @@ inline void resetInputCaptureTimer()
 
 void enableCorePeripherals()
 {
+    /* REQTRK: REQ-HW-BOOT-SEQUENCE */
     LL_TIM_CC_EnableChannel(TIM1, LL_TIM_CHANNEL_CH1);
     LL_TIM_CC_EnableChannel(TIM1, LL_TIM_CHANNEL_CH2);
     LL_TIM_CC_EnableChannel(TIM1, LL_TIM_CHANNEL_CH3);

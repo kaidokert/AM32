@@ -30,7 +30,7 @@ extern char prop_brake_active;
 #define HIGH_BITREG_OFF BRR
 #endif
 
-void proportionalBrake()
+void proportionalBrake() /* REQTRK: REQ-HW-PHASE-BRAKE_PROP */
 { // alternate all channels between braking (ABC LOW)
     // and coasting (ABC float) put lower channel into
     // alternate mode and turn upper OFF for each
@@ -293,7 +293,7 @@ void allOff()
     phaseCFLOAT();
 }
 
-void comStep(int newStep)
+void comStep(int newStep) /* REQTRK: REQ-HW-PHASE-COMMUTATION */
 {
     switch (newStep) {
     case 1: // A-B

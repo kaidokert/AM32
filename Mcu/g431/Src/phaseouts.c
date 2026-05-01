@@ -293,7 +293,7 @@ void allOff()
     phaseCFLOAT();
 }
 
-void comStep(int newStep)
+void comStep(int newStep) /* REQTRK: REQ-HW-PHASE-COMMUTATION */
 {
     // TIM14->CNT = 0;
     switch (newStep) {
